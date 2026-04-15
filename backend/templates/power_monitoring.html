@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}스마트 전력 모니터링 - 산재 예방 통합 관제 시스템{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 각 설비별 차트 생성
+        const devices = {{ devices| safe
+    }};
+    devices.filter(d => d.is_connected).slice(0, 8).forEach((device, idx) => {
+        const canvas = document.getElementById(`chart-${idx}`);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const data = Array.from({ length: 8 }, () =>
+            Math.max(0, device.load_rate + (Math.random() - 0.5) * 20)
+        );
+
+        const chartColor =
+            device.status === 'danger' ? '#ef4444' :
+                device.status === 'caution' ? '#f59e0b' : '#22c55e';
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Array.from({ length: 8 }, (_, i) => i),
+                datasets: [{
+                    data: data,
+                    backgroundColor: chartColor,
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="p-3 flex gap-3 h-full">
+    <!-- Left: 설비 목록 -->
+    <div class="w-64 shrink-0">
+        <h2 class="text-sm font-bold text-white mb-2">실시간/AI 예측 스마트 전력 현황</h2>
+
+        <!-- Status counts -->
+        <div class="flex gap-2 text-xs mb-2">
+            <span class="px-2 py-0.5 rounded font-bold bg-red-500 text-white">위험 {{ devices|length }}</span>
+            <span class="px-2 py-0.5 rounded font-bold bg-yellow-500 text-black">주의 0</span>
+            <span class="px-2 py-0.5 rounded font-bold bg-green-600 text-white">정상 0</span>
+        </div>
+
+        <!-- 설비 테이블 -->
+        <div class="bg-[#1a1b25] border border-[#2e3048] rounded overflow-hidden">
+            <table class="w-full text-xs">
+                <thead class="bg-[#12131c]">
+                    <tr class="text-gray-500">
+                        <th class="text-left p-2">설비명</th>
+                        <th class="text-right p-2">부하율</th>
+                        <th class="text-right p-2">온도</th>
+                        <th class="text-right p-2">상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices %}
+                    <tr class="border-t border-[#2e3048] hover:bg-[#2e3048] cursor-pointer">
+                        <td class="p-2 text-gray-200">{{ device.name }}</td>
+                        <td class="p-2 text-right text-gray-300">{{ device.load_rate|default:"-" }}%</td>
+                        <td class="p-2 text-right text-gray-300">{{ device.temperature|default:"-" }}℃</td>
+                        <td class="p-2 text-right">
+                            <span class="px-1.5 py-0.5 rounded text-xs font-bold text-white
+                            {% if device.status == 'danger' %}bg-red-500
+                            {% elif device.status == 'caution' %}bg-yellow-500
+                            {% else %}bg-green-600{% endif %}">
+                                {% if device.status == 'danger' %}위험
+                                {% elif device.status == 'caution' %}주의
+                                {% else %}정상{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 재가동 버튼 -->
+        <button
+            class="mt-2 w-full py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded transition-colors">
+            재가동
+        </button>
+    </div>
+
+    <!-- Right: 차트 -->
+    <div class="flex-1 flex flex-col gap-2">
+        <!-- 탭 -->
+        <div class="flex items-center gap-2">
+            <button onclick="setMode('realtime')"
+                class="px-3 py-1 rounded text-xs font-medium bg-[#3b82f6] text-white">실시간 현황</button>
+            <button onclick="setMode('ai')" class="px-3 py-1 rounded text-xs font-medium bg-[#1a1b25] text-gray-400">AI
+                예측</button>
+        </div>
+
+        <!-- 차트 그리드 -->
+        <div class="grid grid-cols-4 gap-2 flex-1">
+            {% for device in devices %}
+            {% if device.is_connected %}
+            <div class="bg-[#1a1b25] border border-[#2e3048] rounded p-2">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs text-gray-300 font-medium">{{ device.name }}</span>
+                    <span class="px-1 py-0.5 rounded text-[10px] font-bold text-white
+                        {% if device.status == 'danger' %}bg-red-500
+                        {% elif device.status == 'caution' %}bg-yellow-500
+                        {% else %}bg-green-600{% endif %}">
+                        {% if device.status == 'danger' %}위험
+                        {% elif device.status == 'caution' %}주의
+                        {% else %}정상{% endif %}
+                    </span>
+                </div>
+                <div class="h-20">
+                    <canvas id="chart-{{ forloop.counter0 }}"></canvas>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- 상태 표시 바 -->
+        <div class="bg-[#1a1b25] border border-[#2e3048] rounded px-3 py-2 flex items-center gap-3 text-xs">
+            <span class="bg-red-500 text-white px-2 py-0.5 rounded font-bold">설비 1</span>
+            <span class="text-gray-300">전력 사용량 증가 · 재가동 필요</span>
+            <span class="ml-auto text-gray-400">12:00:00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setMode(mode) {
+        console.log('Set mode:', mode);
+    }
+</script>
+{% endblock %}
