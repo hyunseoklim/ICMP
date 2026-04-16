@@ -5,11 +5,11 @@ from rest_framework.response import Response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def dashboard_summary(request):
-    return Response({})
+def workers_list(request):
+    return Response({'total': 0, 'on_site': 0, 'workers': []})
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def realtime_map(request):
-    return Response({})
+def send_notification(request):
+    return Response({'success': True, 'message': '알림이 전송되었습니다.'})

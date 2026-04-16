@@ -5,11 +5,11 @@ from rest_framework.response import Response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def dashboard_summary(request):
-    return Response({})
+def power_devices_list(request):
+    return Response([])
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def realtime_map(request):
-    return Response({})
+def power_device_detail(request, device_id):
+    return Response({'error': '설비를 찾을 수 없습니다.'}, status=404)
