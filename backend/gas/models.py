@@ -12,7 +12,7 @@ class GasReading(models.Model):
         WARNING = "주의", "주의"
         NORMAL  = "정상", "정상"
 
-    sensor           = models.ForeignKey(GasSensor, on_delete=models.CASCADE, related_name='readings')
+    sensor_           = models.ForeignKey(GasSensor, on_delete=models.CASCADE, related_name='readings')
     software_version = models.CharField(max_length=20, null=True, blank=True)
 
     # 9개 가스

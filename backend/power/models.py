@@ -25,6 +25,5 @@ class PowerReading(models.Model):
         verbose_name        = '전력 측정값'
         verbose_name_plural = '전력 측정값 목록'
 
-    def __str__(self):
         status = 'ON' if self.relay_state else 'OFF'
         return f'[{self.device.device_id}] {self.channel} {status} {self.measured_at}'
